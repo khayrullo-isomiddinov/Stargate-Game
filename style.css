@@ -1,0 +1,136 @@
+body {
+    background-image: url(Assets/875545.png);
+    background-color: rgb(51, 65, 65);
+    background-size: cover;
+    height: fit-content;
+}
+.container{
+    position: relative;
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+@media screen and (max-width: 600px) {
+    .container {
+        width: 100%;
+        padding: 10px;
+    }
+
+    .time {
+        
+        font-size: 14px;
+    }
+}
+
+
+.players {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    width: 420px;
+    height: 300px; 
+    margin-bottom: -10px;
+}
+span{
+    font-size: 25px;
+}
+.time{
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    height: 180px;
+    width: 40px;
+    background-color: bisque;
+    padding: 35px;
+    top: 30px;
+    border: 2px solid rgb(255, 207, 135);
+}
+
+.player {
+    display: grid;
+    grid-row:auto;
+    align-items: center;
+    padding: 8px;
+    width: 30%;     
+    margin: 40; 
+    height: calc(40% - 45px); 
+    background-color:bisque; 
+    border: 5px solid rgb(255, 207, 135);
+    margin-top: 9px;
+}
+
+table {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border: 3px solid black;
+    border-radius: 10px;
+}
+ 
+
+
+td {
+    width: 80px;
+    height: 80px;
+    border: 4px solid rgb(0, 0, 0);
+    padding: 0;
+    background-color:rgb(40, 35, 28);
+    border-radius: 5px;
+    border: 1px solid rgba(0, 0, 0, 0.1); 
+    transition: transform 0.3s ease;
+    transform-style: preserve-3d;
+    user-select: none;
+    cursor: pointer;
+    position: relative;
+}
+
+
+.flip .front {
+    transform: rotateY(180deg);
+    visibility: hidden;
+    transition: transform 0.3s ease;
+    height: 0;
+    width: 0;
+}
+
+.flip .back {
+    transform: rotateY(0deg);
+    visibility: visible;
+}
+
+
+ .back{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    transform: rotateY(180deg);
+    transition: transform 0.3s ease;
+    visibility: hidden;
+    justify-content: center;
+    align-items: center;
+}
+*/
+
+.gridsContainer {
+    position: relative fixed;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 60vh;
+    user-select: none; 
+    margin-top: -15px;
+    
+}
+
+.oases {
+    position: absolute; 
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60%; 
+    height: auto;
+}
+
