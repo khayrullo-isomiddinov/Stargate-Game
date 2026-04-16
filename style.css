@@ -962,3 +962,108 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--sand-dark); border-radius: 3px; }
+
+/* ──────────────────────────────────────────────────────────
+   MOBILE  (≤ 767px)
+────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+
+  /* Allow the page to scroll vertically */
+  body { overflow-x: hidden; overflow-y: auto; }
+
+  /* ── Top bar ── */
+  .top-bar { padding: 6px 10px; gap: 6px; }
+  .game-title { font-size: 1rem; letter-spacing: 3px; }
+  .timer-display { font-size: 0.8rem; min-width: 68px; padding: 4px 8px; gap: 5px; }
+  .timer-icon { font-size: 0.85rem; }
+  .items-display { gap: 5px; }
+  .item-slot { padding: 3px 5px; gap: 0; }
+  .item-slot span { display: none; }        /* hide "Watch / Robot / Camera" labels */
+  .item-slot img { width: 20px; height: 20px; }
+
+  /* ── Full-height game layout → auto height so page can scroll ── */
+  .game-layout { height: auto; min-height: 100vh; }
+
+  /* ── Game body: vertical stack ── */
+  .game-body {
+    flex-direction: column;
+    align-items: stretch;
+    overflow: visible;
+    padding: 8px;
+    gap: 8px;
+  }
+
+  /* Board section comes first */
+  .board-section { order: 1; width: 100%; align-items: center; }
+
+  /* Players panel below the board */
+  .players-panel {
+    order: 2;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-height: none;
+    overflow-y: visible;
+    gap: 6px;
+  }
+  .player-card {
+    flex: 1;
+    min-width: 130px;
+    max-width: calc(50% - 3px);
+    padding: 8px 9px;
+  }
+
+  /* Info panel last */
+  .info-panel {
+    order: 3;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .info-box { flex: 1; min-width: 130px; }
+  .how-to { display: none; }   /* covered by the tutorial overlay */
+
+  /* ── Board: dynamic cell size ──
+     overhead = game-body padding (2×8) + board padding (2×8) + 4 gaps (4×4) = 48px */
+  .board {
+    --cell: calc((100vw - 48px) / 5);
+    grid-template-columns: repeat(5, var(--cell));
+    grid-template-rows:    repeat(5, var(--cell));
+    gap: 4px;
+    padding: 8px;
+    width: fit-content;
+    margin: 0 auto;
+  }
+  .cell {
+    width:  var(--cell);
+    height: var(--cell);
+  }
+
+  /* ── Action bar & log ── */
+  .action-bar { max-width: 100%; padding: 8px 12px; }
+  .game-log   { max-width: 100%; height: 68px; }
+
+  /* ── Home screen ── */
+  .home-container { padding: 28px 22px; }
+
+  /* ── Overlays ── */
+  .overlay-card {
+    padding: 28px 20px;
+    margin: 0 12px;
+    max-width: calc(100vw - 24px);
+  }
+  .story-card   { padding: 24px 18px; }
+  .tutorial-card { padding: 24px 16px 20px; }
+  .tut-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* ── Touch: prevent 300 ms tap delay, remove blue highlight ── */
+  .cell, .action-btn, .start-btn, .count-btn,
+  .story-btn, .continue-btn, .player-name-input,
+  .number-input, .tut-dismiss-btn, .story-close-btn {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}

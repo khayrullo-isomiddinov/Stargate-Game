@@ -119,6 +119,14 @@ function directionTo(from, to) {
   return 'LEFT';
 }
 
+/* Return the rendered cell size so token positions stay in sync with CSS. */
+function getCellSize() {
+  if (window.innerWidth <= 767) {
+    return Math.floor((window.innerWidth - 48) / 5);
+  }
+  return 88;
+}
+
 function pickRandom(total, count, excluded) {
   const excSet = excluded instanceof Set ? excluded : new Set(excluded);
   const avail  = Array.from({ length: total }, (_, i) => i).filter(i => !excSet.has(i));
@@ -397,7 +405,10 @@ function renderBoard() {
       .filter(({ p }) => p.position === i && p.alive)
       .map(({ pi }) => pi);
 
-    const single = hereIndices.length === 1;
+    const single   = hereIndices.length === 1;
+    const cellSize = getCellSize();
+    const szSingle = Math.round(cellSize * 0.52);   // ≈ 46px at 88px cells
+    const szMulti  = Math.round(cellSize * 0.25);   // ≈ 22px at 88px cells
 
     hereIndices.forEach((pi, slot) => {
       const player    = state.players[pi];
@@ -409,17 +420,17 @@ function renderBoard() {
 
       if (single) {
         /* Solo on this tile — large, centred */
-        token.style.width     = '46px';
-        token.style.height    = '46px';
+        token.style.width     = szSingle + 'px';
+        token.style.height    = szSingle + 'px';
         token.style.top       = '50%';
         token.style.left      = '50%';
         token.style.transform = 'translate(-50%, -50%)';
       } else {
         /* Multiple players — small strip along the top */
-        token.style.width  = '22px';
-        token.style.height = '22px';
+        token.style.width  = szMulti + 'px';
+        token.style.height = szMulti + 'px';
         token.style.top    = '3px';
-        token.style.left   = `${2 + slot * 21}px`;
+        token.style.left   = `${2 + slot * (szMulti + 2)}px`;
       }
 
       const sprite     = document.createElement('img');
