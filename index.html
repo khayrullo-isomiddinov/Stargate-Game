@@ -1,144 +1,282 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stargate – Desert Hunt</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <div class="time">
-            <span id="timeSpan">3:34</span>
-            <span id="part1Span">Watch</span>
-            <span id="part2Span">Robot</span>
-            <span id="part3Span">Camera</span>
-        </div>
-        
-    <div class="players">
-        <div class="player">
-            <span style="color: red;">Harry</span>
-            <span id="bottleOfWater"><a id="waterBottleNum1">6</a></span>
-            <span id="palm1"><a id="palmNum1">3</a></span>
-        </div>
-        
-        <div class="player">
-          <span style="color: green;">Leo</span>
-          <span id="bottleOfWater2"><a id="waterBottleNum2">6</a></span>
-          <span id="palm2"><a id="palmNum2">3</a></span>
-      </div>
-      
-        
-        <div class="player">
-            <span style="color: blue;">Andy</span>
-            <span id="bottleOfWater3"><a id="waterBottleNum3">6</a></span>
-            <span id="palm3"><a id="palmNum3">3</a></span>
-        </div>
-        <div class="player">
-          <span style="color: orange;">Morgan</span>
-          <span id="bottleOfWater4"><a id="waterBottleNum4">6</a></span>
-            
-            <span id="palm4"><a id="palmNum4">3</a></span>
-        </div>
-    </div>
 
-    <div class="gridsContainer">
-        <table id="tableId">
-            <tbody>
-                <tr>
-                  <td>
-                    <div class="front"></div>
-                    <div class="back">back</div>
-                  </td>
-                  <td>
-                    <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td>
-                    <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td>
-                    <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td>
-                    <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                </tr>
-                <tr>
-                  <td>
-                    <div class="front"></div>
-                    <div class="back">back</div>
-                  </td>
-                  <td><div class="front"></div>
-                    <div class="back">back</div></td>
-                  <td>
-                    <div class="front"></div>
-                    <div class="back">back</div>
-                  </td>
-                  <td><div class="front"></div>
-                    <div class="back">back</div></td>
-                  <td>
-                    <div class="front"></div>
-                    <div class="back">back</div>
-                  </td>
-                </tr>
-                <tr>
-                  <td> <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td> <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td> <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td> <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td> <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                </tr>
-                <tr>
-                  <td> <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td><div class="front"></div>
-                    <div class="back">back</div></td>
-                  <td> <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td> <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td><div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                </tr>
-                <tr>
-                  <td><div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td><div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td> <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td><div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                  <td> <div class="front"></div>
-                    <div class="back">back</div>
-                </td>
-                </tr>
-              </tbody>
-        </table>
+  <!-- ========== HOME SCREEN ========== -->
+  <div id="homeScreen" class="screen active">
+    <div class="home-bg"></div>
+    <div class="home-container">
+      <div class="game-logo">
+        <img src="Assets/Assets/Stargate.png" alt="Stargate" class="logo-img">
+        <h1>STARGATE</h1>
+        <p class="subtitle">Desert Hunt</p>
+      </div>
+
+      <div class="setup-card">
+        <div class="setup-row">
+          <label>Players</label>
+          <div class="player-count-selector">
+            <button class="count-btn active" data-count="1">1</button>
+            <button class="count-btn" data-count="2">2</button>
+            <button class="count-btn" data-count="3">3</button>
+            <button class="count-btn" data-count="4">4</button>
+          </div>
+        </div>
+
+        <div class="setup-row">
+          <label>Starting Water</label>
+          <input type="number" id="startingWater" value="5" min="1" max="20" class="number-input">
+        </div>
+
+        <div id="playerInputs" class="player-inputs-container"></div>
+
+        <button id="startBtn" class="start-btn">Begin Expedition</button>
+
+        <button class="story-btn" onclick="showStory()">📖 The Story</button>
+
+        <div id="continueRow" class="continue-row hidden">
+          <span>Saved game found.</span>
+          <button id="continueBtn" class="continue-btn">Continue</button>
+        </div>
+      </div>
+
+      <div class="author-credit">
+        Made by
+        <a href="https://github.com/khayrullo-isomiddinov" target="_blank" rel="noopener">
+          Khayrullo Isomiddinov
+        </a>
+      </div>
     </div>
-</div>
-    <script src="script.js"></script>
+  </div>
+
+  <!-- ========== GAME SCREEN ========== -->
+  <div id="gameScreen" class="screen">
+    <div class="game-layout">
+
+      <!-- Top bar -->
+      <div class="top-bar">
+        <div class="timer-display">
+          <span class="timer-icon">⏱</span>
+          <span id="timerDisplay">00:00</span>
+        </div>
+
+        <div class="game-title">STARGATE</div>
+
+        <div class="items-display">
+          <div class="item-slot" id="itemSlot0">
+            <img src="Assets/Assets/Item 1.png" alt="Watch">
+            <span>Watch</span>
+          </div>
+          <div class="item-slot" id="itemSlot1">
+            <img src="Assets/Assets/Item 2.png" alt="Robot">
+            <span>Robot</span>
+          </div>
+          <div class="item-slot" id="itemSlot2">
+            <img src="Assets/Assets/Item 3.png" alt="Camera">
+            <span>Camera</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main area -->
+      <div class="game-body">
+
+        <!-- Player cards -->
+        <div class="players-panel" id="playersPanel"></div>
+
+        <!-- Board + controls -->
+        <div class="board-section">
+          <div class="board" id="gameBoard"></div>
+
+          <div class="action-bar">
+            <button id="digBtn" class="action-btn dig-btn">
+              <img src="Assets/Assets/Hole.png" alt="Dig">
+              Dig
+            </button>
+            <div class="actions-indicator">
+              <span id="currentPlayerName">Player</span>:
+              <span id="actionsLeft">3</span> actions left
+            </div>
+          </div>
+
+          <div class="game-log" id="gameLog"></div>
+        </div>
+
+        <!-- Info panel -->
+        <div class="info-panel">
+          <div class="info-box">
+            <h3>Clues Found</h3>
+            <div class="clue-item" id="clueRow0">
+              <img src="Assets/Assets/Item 1 - clue.png" alt="Clue 1">
+              <span id="clue0count">0/2</span>
+            </div>
+            <div class="clue-item" id="clueRow1">
+              <img src="Assets/Assets/Item 2 - clue.png" alt="Clue 2">
+              <span id="clue1count">0/2</span>
+            </div>
+            <div class="clue-item" id="clueRow2">
+              <img src="Assets/Assets/Item 3 - clue.png" alt="Clue 3">
+              <span id="clue2count">0/2</span>
+            </div>
+          </div>
+
+          <div class="info-box">
+            <h3>Legend</h3>
+            <div class="legend-item"><div class="leg-dot" style="background:#a8d5b5;border:1px solid #3a7a4e"></div> Oasis</div>
+            <div class="legend-item"><div class="leg-dot" style="background:#f5c6cb;border:1px solid #c0392b"></div> Drought</div>
+            <div class="legend-item"><div class="leg-dot" style="background:#f5e6c0;border:1px solid #c4944c"></div> Sand</div>
+            <div class="legend-item"><div class="leg-dot leg-pulse"></div> Movable</div>
+          </div>
+
+          <div class="info-box how-to">
+            <h3>How to Play</h3>
+            <p>Click a glowing cell to <strong>move</strong>.</p>
+            <p>Press <strong>Dig</strong> to reveal your current tile.</p>
+            <p>Find 2 clues before you can collect each part.</p>
+            <p><strong>End Turn</strong> costs 1 water.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== STORY OVERLAY ========== -->
+  <div id="storyOverlay" class="overlay hidden" onclick="hideStory()">
+    <div class="story-card" onclick="event.stopPropagation()">
+      <div class="story-emblem">
+        <img src="Assets/Assets/Stargate.png" alt="Stargate">
+      </div>
+
+      <h2 class="story-title">THE MISSION</h2>
+
+      <div class="story-body">
+        <p>
+          Deep in the heart of an ancient, nameless desert, explorers have uncovered
+          something extraordinary — a <strong>Stargate</strong>: a device of unknown
+          origin, rumoured to open portals across space and time.
+        </p>
+        <p>
+          A violent sandstorm tore it apart. Three components were scattered across
+          the dunes and buried under the sand:
+        </p>
+
+        <div class="story-items">
+          <div class="story-item-row">
+            <img src="Assets/Assets/Item 1.png" alt="Watch">
+            <div>
+              <strong>The Watch</strong>
+              <span>Controls temporal calibration — without it, the gate opens to nowhere.</span>
+            </div>
+          </div>
+          <div class="story-item-row">
+            <img src="Assets/Assets/Item 2.png" alt="Robot">
+            <div>
+              <strong>The Robot</strong>
+              <span>The mechanical heart of the Stargate. It drives the rotation sequence.</span>
+            </div>
+          </div>
+          <div class="story-item-row">
+            <img src="Assets/Assets/Item 3.png" alt="Camera">
+            <div>
+              <strong>The Camera</strong>
+              <span>Locks the dimensional coordinates. Without it, there is no destination.</span>
+            </div>
+          </div>
+        </div>
+
+        <p>
+          Previous expeditions left <strong>directional clues</strong> in the sand.
+          Rare <strong>oases</strong> offer water — but the desert is merciless, and
+          not every oasis is what it seems.
+        </p>
+        <p class="story-warning">
+          You have limited water. Every turn costs a drop.<br>
+          Find all three components before the desert claims you.
+        </p>
+      </div>
+
+      <button class="start-btn story-close-btn" onclick="hideStory()">Close</button>
+    </div>
+  </div>
+
+  <!-- ========== TUTORIAL OVERLAY ========== -->
+  <div id="tutorialOverlay" class="overlay hidden">
+    <div class="tutorial-card">
+      <div class="tut-header">
+        <img src="Assets/Assets/Stargate.png" alt="Stargate" class="tut-logo">
+        <h2>How to Play</h2>
+        <p class="tut-subtitle">Survive the desert. Recover the Stargate components.</p>
+      </div>
+
+      <div class="tut-grid">
+        <div class="tut-section">
+          <div class="tut-icon">👣</div>
+          <h4>Move</h4>
+          <p>Click any <strong>glowing tile</strong> adjacent to you to move there. Costs <strong>1 action</strong>.</p>
+        </div>
+        <div class="tut-section">
+          <div class="tut-icon">⛏️</div>
+          <h4>Dig</h4>
+          <p>Stand on a tile and press <strong>Dig</strong> to reveal what's underneath. Costs <strong>1 action</strong>.</p>
+        </div>
+        <div class="tut-section">
+          <div class="tut-icon">💧</div>
+          <h4>Water</h4>
+          <p>You lose <strong>1 water</strong> every time you end your turn. Hit 0 and it's game over.</p>
+        </div>
+        <div class="tut-section">
+          <div class="tut-icon">🌴</div>
+          <h4>Oases</h4>
+          <p>Dig an oasis to <strong>fully refill</strong> your water. Watch out — one of the four is a drought!</p>
+        </div>
+        <div class="tut-section">
+          <div class="tut-icon">🗺️</div>
+          <h4>Clues</h4>
+          <p>Each part has <strong>2 directional clues</strong> hidden nearby. Find both before you can dig up the part.</p>
+        </div>
+        <div class="tut-section">
+          <div class="tut-icon">🏆</div>
+          <h4>Victory</h4>
+          <p>Recover all <strong>3 Stargate parts</strong> — Watch, Robot, Camera — before your water runs dry.</p>
+        </div>
+      </div>
+
+      <div class="tut-actions-row">
+        <div class="tut-action-chip"><img src="Assets/Assets/Action Points.png" alt="AP"> 3 actions per turn</div>
+        <div class="tut-action-chip"><img src="Assets/Assets/Water.png" alt="Water"> Water refills at oases</div>
+        <div class="tut-action-chip"><img src="Assets/Assets/Oasis marker.png" alt="Oasis"> Markers reveal oasis spots</div>
+      </div>
+
+      <button id="tutorialDismiss" class="start-btn tut-dismiss-btn">Begin the Expedition</button>
+    </div>
+  </div>
+
+  <!-- ========== OVERLAYS ========== -->
+  <div id="gameOverOverlay" class="overlay hidden">
+    <div class="overlay-card gameover-card">
+      <div class="overlay-icon">💀</div>
+      <h1>GAME OVER</h1>
+      <p id="gameOverMsg">All players perished in the desert.</p>
+      <button onclick="resetGame()" class="start-btn">Try Again</button>
+    </div>
+  </div>
+
+  <div id="victoryOverlay" class="overlay hidden">
+    <div class="overlay-card victory-card">
+      <div class="overlay-icon">🏆</div>
+      <h1>VICTORY!</h1>
+      <p id="victoryMsg">All Stargate components recovered!</p>
+      <button onclick="resetGame()" class="start-btn">Play Again</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>

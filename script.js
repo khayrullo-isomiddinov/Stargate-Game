@@ -1,638 +1,659 @@
- const table = document.querySelector("#tableId");
-const cells = table.getElementsByTagName('td');
-const part1 = document.querySelector("#part1Span");
-const part2 = document.querySelector("#part2Span");
-const part3 = document.querySelector("#part3Span");
+'use strict';
 
-// water bottles
-const waterBottle = document.querySelector("#bottleOfWater")
-const secondBottleOfWater = document.querySelector("#bottleOfWater2")
-const thirdBottleOfWater = document.querySelector("#bottleOfWater3")
-const fourthBottleOfWater = document.querySelector("#bottleOfWater4")
+/* ============================================================
+   STARGATE – Desert Hunt  |  script.js
+   ============================================================ */
 
-// action pts
-const playerOneAction = document.querySelector("#palm1")
-const playerTwoAction = document.querySelector("#palm2")
-const playerThreeAction = document.querySelector("#palm3")
-const playerFourAction = document.querySelector("#palm4")
+const GRID        = 5;
+const CENTER      = 12;   // index of centre cell (row 2, col 2)
+const PLAYER_COLORS = ['#e74c3c', '#27ae60', '#3498db', '#f39c12'];
+const ITEM_NAMES  = ['Watch', 'Robot', 'Camera'];
+const LOG_MAX     = 40;
 
-let bottle1 = document.querySelector('#waterBottleNum1')
-const bottle2 = document.querySelector('#waterBottleNum2')
-const bottle3 = document.querySelector('#waterBottleNum3')
-const bottle4 = document.querySelector('#waterBottleNum4')
+let state                = null;
+let selectedPlayerCount  = 1;
+const logBuffer          = [];
 
-let bottle1tracker = 6
-let actions = 3
+/* ============================================================
+   BOARD INITIALISATION
+   ============================================================ */
 
+function buildBoard() {
+  /* Start with 25 sand cells; centre is the Stargate (pre-revealed). */
+  const board = Array.from({ length: 25 }, () => ({
+    type:           'sand',
+    revealed:       false,
+    oasisUsed:      false,
+    clueItemIndex:  null,
+    clueDirection:  null,
+  }));
+  board[CENTER].type     = 'stargate';
+  board[CENTER].revealed = true;
 
+  const used = new Set([CENTER]);
 
-const palm1 = document.querySelector("#palmNum1")
-const palm2 = document.querySelector("#palmNum2")
-const palm3 = document.querySelector("#palmNum3")
-const palm4 = document.querySelector("#palmNum4")
+  /* ── 4 oases (3 water, 1 drought), placed randomly ── */
+  const oasisTypes = shuffle(['oasis', 'oasis', 'oasis', 'drought']);
+  pickRandom(25, 4, used).forEach((pos, i) => {
+    board[pos].type = oasisTypes[i];
+    used.add(pos);
+  });
 
-palm1.style.marginLeft = '20px'
-palm2.style.marginLeft = '20px'
-palm3.style.marginLeft = '20px'
-palm4.style.marginLeft = '20px'
+  /* ── 3 items ── */
+  const itemPositions = pickRandom(25, 3, used);
+  itemPositions.forEach((pos, i) => {
+    board[pos].type = `item${i}`;
+    used.add(pos);
+  });
 
-bottle1.style.marginLeft = '20px'
-bottle2.style.marginLeft = '20px'
-bottle3.style.marginLeft = '20px'
-bottle4.style.marginLeft = '20px'
+  /* ── 2 directional clues per item ── */
+  itemPositions.forEach((itemPos, itemIdx) => {
+    const adj = adjacentOf(itemPos).filter(p => !used.has(p));
+    let cluePositions = adj.slice(0, 2);
 
-
-function pointerHandler() {
-    table.style.cursor = 'pointer';
-    table.style.cursor = 'auto'
-}
-
-table.addEventListener("mouseover", pointerHandler);
-function middleCellCalc() {
-    return Math.floor(cells.length / 2);
-}
-
-function randomSpotsCalcForOases() {
-    const middleIndex = middleCellCalc();
-    const selectedCells = [];
-    while (selectedCells.length < 4) {
-        const randomIndex = Math.floor(Math.random() * cells.length);
-        if (!selectedCells.includes(randomIndex) && randomIndex !== middleIndex) {
-            selectedCells.push(randomIndex);
-        }
+    /* If fewer than 2 adjacent free cells, pick more from the rest of the board. */
+    if (cluePositions.length < 2) {
+      const extra = pickRandom(25, 2 - cluePositions.length, new Set([...used, ...cluePositions]));
+      cluePositions = [...cluePositions, ...extra];
     }
-    return selectedCells;
-}
 
-function RandomOasesHandler() {
-    const oases = ['Assets/Assets/Oasis marker.png', 'Assets/Assets/Oasis marker.png', 'Assets/Assets/Oasis marker.png', 'Assets/Assets/Oasis marker.png'];
-    const selectedCells = randomSpotsCalcForOases();
-    selectedCells.forEach((cellIndex, index) => {
-        const rndImgIndex = Math.floor(Math.random() * oases.length);
-        const imgSrc1 = oases[rndImgIndex];
-        let imgSrc2;
-        if (index === 3) {
-            imgSrc2 = 'Assets/Assets/Drought.png';
-        } else {
-            imgSrc2 = 'Assets/Assets/Oasis.png';
-        }
-        const cell = cells[cellIndex];
-        const oasesImage = document.createElement('img');
-        oasesImage.src = imgSrc1;
-        oasesImage.classList.add('img');
-        oasesImage.style.maxWidth = '100%';
-        oasesImage.style.maxHeight = '100%';
-        cell.appendChild(oasesImage);
-        
-        playerOneAction.addEventListener("click", function() {
-            if (!oasesImage.flipped && cellIndex === global && (global !== 0)) {
-                oasesImage.src = imgSrc2;
-                oasesImage.flipped = true;
-                cell.style.backgroundColor = 'rgba(253,231,190,255)'
-            }
-           })
+    cluePositions.forEach(cluePos => {
+      board[cluePos].type          = 'clue';
+      board[cluePos].clueItemIndex = itemIdx;
+      board[cluePos].clueDirection = directionTo(cluePos, itemPos);
+      used.add(cluePos);
     });
-    
+  });
+
+  return board;
 }
-    const stargateSource = 'Assets/Assets/Stargate.png';
-    const stargatePic = document.createElement('img');
-    const targetCell1 = cells[middleCellCalc()];
-    stargatePic.src = stargateSource;
-    stargatePic.classList.add('img');
-    stargatePic.style.maxHeight = '100%';
-    stargatePic.style.maxWidth = '100%';
-    targetCell1.style.position = 'relative';
-    stargatePic.style.position = 'absolute';
-    stargatePic.style.top = 0;
-    stargatePic.style.left = 0; 
-    stargatePic.style.zIndex = 1;
-    targetCell1.appendChild(stargatePic);
 
-    let global = 0;
-    function loadPlayer() {
-        const table = document.querySelector("#tableId");
-        const cells = Array.from(table.getElementsByTagName('td'));
-        let targetCellIndex = middleCellCalc();
-        const playerPic = document.createElement('img');
-        playerPic.src = 'Assets/Assets/Player.png';
-        playerPic.classList.add('img');
-        playerPic.style.maxHeight = '100%';
-        playerPic.style.maxWidth = '100%';
-        playerPic.style.position = 'absolute'; 
-        playerPic.style.top = 0; 
-        playerPic.style.left = 0; 
-        playerPic.style.zIndex = 2;
-        cells[targetCellIndex].appendChild(playerPic);
-        cells.forEach((cell, index) => {
-            cell.addEventListener('click', () => {
-                const targetIndex = cells.indexOf(cell);
-                global = targetIndex;
-                if (isAdjacent(targetCellIndex, targetIndex)) {
-                    const targetCell = cells[targetIndex];
-                    playerPic.style.top = 0; 
-                    playerPic.style.left = 0;
-                    playerPic.remove(); 
-                    targetCell.appendChild(playerPic); 
-                    targetCellIndex = targetIndex;
-                    bottle1tracker = bottle1tracker - 1;
-                    }
-            });
-            
-        });
-    
-        function isAdjacent(currentIndex, targetIndex) {
-            return Math.abs(currentIndex - targetIndex) === 1 || Math.abs(currentIndex - targetIndex) === 5;
-        }
+function initGame(playerCount, names, startWater) {
+  if (state && state.timerInterval) clearInterval(state.timerInterval);
+
+  state = {
+    board:              buildBoard(),
+    players:            names.slice(0, playerCount).map((name, i) => ({
+      name:    name || `Player ${i + 1}`,
+      color:   PLAYER_COLORS[i],
+      water:   startWater,
+      maxWater: startWater,
+      position: CENTER,
+      alive:   true,
+    })),
+    currentPlayerIndex: 0,
+    actionsLeft:        3,
+    cluesFound:         [0, 0, 0],   // global: how many clues revealed for each item
+    itemsCollected:     [false, false, false],
+    timer:              0,
+    timerInterval:      null,
+    gameOver:           false,
+    victory:            false,
+  };
+
+  saveState();
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+
+function adjacentOf(pos) {
+  const row = Math.floor(pos / GRID), col = pos % GRID;
+  const result = [];
+  if (row > 0)        result.push(pos - GRID);
+  if (row < GRID - 1) result.push(pos + GRID);
+  if (col > 0)        result.push(pos - 1);
+  if (col < GRID - 1) result.push(pos + 1);
+  return result;
+}
+
+function isAdjacent(a, b) { return adjacentOf(a).includes(b); }
+
+function directionTo(from, to) {
+  const dr = Math.floor(to / GRID) - Math.floor(from / GRID);
+  const dc = (to % GRID) - (from % GRID);
+  if (dr > 0) return 'DOWN';
+  if (dr < 0) return 'UP';
+  if (dc > 0) return 'RIGHT';
+  return 'LEFT';
+}
+
+function pickRandom(total, count, excluded) {
+  const excSet = excluded instanceof Set ? excluded : new Set(excluded);
+  const avail  = Array.from({ length: total }, (_, i) => i).filter(i => !excSet.has(i));
+  const result = [];
+  while (result.length < count && avail.length > 0) {
+    const idx = Math.floor(Math.random() * avail.length);
+    result.push(avail[idx]);
+    avail.splice(idx, 1);
+  }
+  return result;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ============================================================
+   GAME ACTIONS
+   ============================================================ */
+
+function handleCellClick(index) {
+  if (!state || state.gameOver || state.victory || state.turnEnding) return;
+  const player = state.players[state.currentPlayerIndex];
+  if (!player.alive) return;
+
+  if (state.actionsLeft <= 0) return;
+  if (index === player.position) {
+    addLog('You are already here. Press "Dig" to reveal this tile.');
+    return;
+  }
+  if (!isAdjacent(player.position, index)) {
+    addLog('You can only move to an adjacent tile.');
+    return;
+  }
+
+  player.position = index;
+  state.actionsLeft--;
+  addLog(`${player.name} moved. (${state.actionsLeft} action${state.actionsLeft !== 1 ? 's' : ''} left)`);
+
+  saveState();
+  render();
+  maybeAutoEndTurn();
+}
+
+function handleDig() {
+  if (!state || state.gameOver || state.victory || state.turnEnding) return;
+  const player = state.players[state.currentPlayerIndex];
+  if (!player.alive) return;
+  if (state.actionsLeft <= 0) { addLog('No actions remaining!'); return; }
+
+  const pos  = player.position;
+  const cell = state.board[pos];
+
+  if (pos === CENTER) { addLog('Nothing to dig at the Stargate.'); return; }
+  if (cell.revealed)  { addLog('This tile has already been revealed.'); return; }
+
+  /* Spend action and reveal */
+  state.actionsLeft--;
+  cell.revealed = true;
+
+  switch (cell.type) {
+
+    case 'oasis':
+      if (!cell.oasisUsed) {
+        player.water    = player.maxWater;
+        cell.oasisUsed  = true;
+        addLog(`🌴 ${player.name} found a lush oasis! Water fully replenished (${player.water}/${player.maxWater}).`);
+      } else {
+        addLog(`🌴 ${player.name} found an oasis, but it has already been used up.`);
+      }
+      break;
+
+    case 'drought':
+      addLog(`☀️ ${player.name} uncovered a drought oasis — no water here!`);
+      break;
+
+    case 'clue': {
+      const idx  = cell.clueItemIndex;
+      state.cluesFound[idx] = Math.min(state.cluesFound[idx] + 1, 2);
+      const name = ITEM_NAMES[idx];
+      addLog(`🗺️ Clue for the ${name} discovered! (${state.cluesFound[idx]}/2)`);
+      if (state.cluesFound[idx] >= 2) {
+        addLog(`✅ Both clues for the ${name} found — you can now dig it up!`);
+      }
+      break;
     }
 
-
-    function addClues(cell, clueImage) {
-        cell.appendChild(clueImage);
-        clueImage.style.visibility = 'hidden';
-    
-        playerOneAction.addEventListener("click", function() {
-            const cellIndex = Array.from(cells).indexOf(cell);
-            if (cellIndex === global && (global !== 0)) {
-                clueImage.style.visibility = 'visible';
-                clueImage.style.backgroundColor = 'rgba(253, 231, 190, 1)';
-                actions = actions - 1;
-                    const actionsDisplay = document.querySelector("#palmNum1")
-                    if(actionsDisplay) {
-                        actionsDisplay.textContent = actions;
-                }
-                
-            } 
-            if(actions === 0) {
-                bottle1tracker = bottle1tracker - 1;
-                const bottleScoreDisplay = document.querySelector("#waterBottleNum1");
-                if(bottleScoreDisplay) {
-                    bottleScoreDisplay.textContent = bottle1tracker;
-                }
-            }
-        });
-    }
-    
-    function cellDoesNotContainImg(index) {
-        if(cells[index].querySelector('img')) {
-            return false
+    default:
+      if (cell.type.startsWith('item')) {
+        const itemIdx = parseInt(cell.type.slice(4));
+        if (state.cluesFound[itemIdx] < 2) {
+          /* Not enough clues — undo the reveal and refund the action */
+          cell.revealed  = false;
+          state.actionsLeft++;
+          addLog(`❓ You need both clues first! (${state.cluesFound[itemIdx]}/2 found)`);
         } else {
-            return true
+          state.itemsCollected[itemIdx] = true;
+          addLog(`🏆 ${player.name} recovered the ${ITEM_NAMES[itemIdx]}!`);
+          checkVictory();
         }
+      } else {
+        addLog(`⛏️ ${player.name} dug and found only sand.`);
+      }
+  }
+
+  saveState();
+  render();
+  maybeAutoEndTurn();
+}
+
+function maybeAutoEndTurn() {
+  if (!state || state.gameOver || state.victory) return;
+  if (state.actionsLeft > 0) return;
+  if (state.turnEnding) return;   // guard against double-fire
+
+  state.turnEnding = true;
+  addLog('All actions used — turn ending…');
+  render();                        // re-render to show locked-out state
+
+  setTimeout(() => {
+    if (!state) return;
+    state.turnEnding = false;
+    endTurn();
+  }, 900);
+}
+
+function endTurn() {
+  if (!state || state.gameOver || state.victory) return;
+  const player = state.players[state.currentPlayerIndex];
+
+  /* Deduct water at end of turn */
+  player.water--;
+  addLog(`${player.name}'s turn ended. Water: ${player.water}/${player.maxWater}`);
+
+  if (player.water <= 0) {
+    player.water = 0;
+    player.alive = false;
+    addLog(`💀 ${player.name} ran out of water in the desert!`);
+    checkGameOver();
+    if (state.gameOver) { saveState(); render(); return; }
+  }
+
+  /* Advance to next alive player */
+  let next = (state.currentPlayerIndex + 1) % state.players.length;
+  for (let i = 0; i < state.players.length; i++) {
+    if (state.players[next].alive) break;
+    next = (next + 1) % state.players.length;
+  }
+
+  state.currentPlayerIndex = next;
+  state.actionsLeft        = 3;
+  addLog(`─── ${state.players[next].name}'s turn ───`);
+
+  saveState();
+  render();
+}
+
+function checkVictory() {
+  if (state.itemsCollected.every(Boolean)) {
+    state.victory = true;
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+}
+
+function checkGameOver() {
+  if (state.players.every(p => !p.alive)) {
+    state.gameOver = true;
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+}
+
+/* ============================================================
+   LOGGING
+   ============================================================ */
+
+function addLog(msg) {
+  logBuffer.push(msg);
+  if (logBuffer.length > LOG_MAX) logBuffer.shift();
+  const el = document.getElementById('gameLog');
+  if (el) {
+    el.innerHTML = [...logBuffer].reverse()
+      .map(m => `<p class="log-entry">${m}</p>`)
+      .join('');
+  }
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+
+function render() {
+  if (!state) return;
+  renderBoard();
+  renderPlayers();
+  renderActionBar();
+  renderClueTracker();
+  renderItemSlots();
+
+  if (state.victory) {
+    const m = String(Math.floor(state.timer / 60)).padStart(2, '0');
+    const s = String(state.timer % 60).padStart(2, '0');
+    document.getElementById('victoryMsg').textContent =
+      `All Stargate components recovered in ${m}:${s}!`;
+    document.getElementById('victoryOverlay').classList.remove('hidden');
+  } else if (state.gameOver) {
+    document.getElementById('gameOverOverlay').classList.remove('hidden');
+  }
+}
+
+function renderBoard() {
+  const boardEl     = document.getElementById('gameBoard');
+  boardEl.innerHTML = '';
+  const cp          = state.players[state.currentPlayerIndex];
+
+  state.board.forEach((cell, i) => {
+    const el = document.createElement('div');
+    el.className = 'cell';
+
+    /* Background / revealed styling */
+    if (cell.revealed) {
+      el.classList.add('revealed');
+      const baseType = cell.type.startsWith('item') ? 'item' : cell.type;
+      el.classList.add(`cell-${baseType}`);
+    } else {
+      el.classList.add('cell-hidden');
     }
 
-    function panelsPopulate() {
-        // ------- upper panels ----------
-        const items = ['Assets/Assets/Item 1.png', 'Assets/Assets/Item 2.png', 'Assets/Assets/Item 3.png'];
-        const partElements = [part1, part2, part3];
-        
-        partElements.forEach((part, index) => {
-            part.textContent = '';
-            const itemSrc = items[index];
-            const itemImage = document.createElement('img');
-            itemImage.classList.add('img');
-            itemImage.src = itemSrc;
-            itemImage.style.maxHeight = '100%';
-            itemImage.style.maxWidth = '100%';
-            itemImage.style.opacity = 0.7;
-            part.appendChild(itemImage);
-        });
+    /* Highlight adjacent movable cells */
+    if (!state.gameOver && !state.victory && !state.turnEnding && cp.alive
+        && state.actionsLeft > 0 && isAdjacent(cp.position, i)) {
+      el.classList.add('movable');
+    }
 
-        const palmImgSrc = 'Assets/Assets/Action Points.png';
-        const palmImgs = [playerOneAction, playerTwoAction, playerThreeAction, playerFourAction];
-        palmImgs.forEach((player, index) => {
-        const palmImg = document.createElement('img');
-        palmImg.src = palmImgSrc;
-        palmImg.style.maxHeight = '100%';
-        palmImg.style.maxWidth = '100%';
-        player.style.position = 'relative';
-        palmImg.style.position = 'absolute';
-        player.appendChild(palmImg);
-        palmImg.style.cursor = 'pointer';
-        palmImg.style.left = '-10px'
-        });
-        
+    /* Highlight current player's position */
+    if (cp.position === i && cp.alive) el.classList.add('current-pos');
 
-        const wbImageSrc = 'Assets/Assets/Water.png';
-        const wbImages = [waterBottle, secondBottleOfWater, thirdBottleOfWater, fourthBottleOfWater];
-        wbImages.forEach((bottle, index) => {
-        const wbImage = document.createElement('img');
-        wbImage.src = wbImageSrc;
-        wbImage.classList.add('img');
-        wbImage.style.maxHeight = '100%';
-        wbImage.style.maxWidth = '100%';
-        bottle.style.position = 'relative';
-        wbImage.style.position = 'absolute';
-        bottle.appendChild(wbImage);
-        wbImage.style.left = '-10px'
+    /* ── Cell image ── */
+    if (cell.revealed) {
+      const img   = document.createElement('img');
+      img.className = 'cell-img';
 
+      if (cell.type === 'stargate') {
+        img.src = 'Assets/Assets/Stargate.png';
+      } else if (cell.type === 'oasis') {
+        img.src = 'Assets/Assets/Oasis.png';
+      } else if (cell.type === 'drought') {
+        img.src = 'Assets/Assets/Drought.png';
+      } else if (cell.type === 'sand') {
+        img.src = 'Assets/Assets/Hole.png';
+      } else if (cell.type.startsWith('item')) {
+        img.src = `Assets/Assets/Item ${parseInt(cell.type.slice(4)) + 1}.png`;
+      } else if (cell.type === 'clue') {
+        img.src = `Assets/Assets/Item ${cell.clueItemIndex + 1} - clue_${cell.clueDirection}.png`;
+      }
+
+      el.appendChild(img);
+
+    } else if (cell.type === 'oasis' || cell.type === 'drought') {
+      /* Oasis marker is visible before digging (shows something is here) */
+      const marker      = document.createElement('img');
+      marker.className  = 'cell-img oasis-marker';
+      marker.src        = 'Assets/Assets/Oasis marker.png';
+      el.appendChild(marker);
+    }
+
+    /* ── Player tokens ── */
+    const hereIndices = state.players
+      .map((p, pi) => ({ p, pi }))
+      .filter(({ p }) => p.position === i && p.alive)
+      .map(({ pi }) => pi);
+
+    const single = hereIndices.length === 1;
+
+    hereIndices.forEach((pi, slot) => {
+      const player    = state.players[pi];
+      const isActive  = pi === state.currentPlayerIndex;
+      const token     = document.createElement('div');
+      token.className = 'player-token' + (isActive ? ' active-token' : '');
+      token.style.borderColor = player.color;
+      token.style.background  = player.color + '38';
+
+      if (single) {
+        /* Solo on this tile — large, centred */
+        token.style.width     = '46px';
+        token.style.height    = '46px';
+        token.style.top       = '50%';
+        token.style.left      = '50%';
+        token.style.transform = 'translate(-50%, -50%)';
+      } else {
+        /* Multiple players — small strip along the top */
+        token.style.width  = '22px';
+        token.style.height = '22px';
+        token.style.top    = '3px';
+        token.style.left   = `${2 + slot * 21}px`;
+      }
+
+      const sprite     = document.createElement('img');
+      sprite.src       = 'Assets/Assets/Player.png';
+      sprite.className = 'token-sprite';
+      token.appendChild(sprite);
+      el.appendChild(token);
     });
 
-        // --->> upper panels ---- //
-    
+    el.addEventListener('click', () => handleCellClick(i));
+    boardEl.appendChild(el);
+  });
+}
 
-        // - gathering available spots for further use- ---
-        let availableSpots = [];
-        for (let i = 0; i < cells.length; i++) {
-            if (!cells[i].querySelector('img')) {
-                availableSpots.push(i);
-            }
-        }
-        // // // 
+function renderPlayers() {
+  const panel     = document.getElementById('playersPanel');
+  panel.innerHTML = '';
 
-        
-        const selectedTiles = [];
-        while (selectedTiles.length < 3) {
-            const randomIndex = Math.floor(Math.random() * availableSpots.length);
-            const selectedTile = availableSpots[randomIndex];
-            selectedTiles.push(selectedTile);
-            availableSpots.splice(randomIndex, 1);
-        }
-    
-        selectedTiles.forEach((tileIndex, index) => {
-            const itemSrc = items[index];
-            const cell = cells[tileIndex];
-            const itemImage = document.createElement('img');
-            itemImage.src = itemSrc;
-            itemImage.classList.add('img');
-            itemImage.style.maxWidth = '100%';
-            itemImage.style.maxHeight = '100%';
-            cell.appendChild(itemImage);
-            itemImage.style.visibility = 'hidden';
-            
-            // down clue, first //
-            const downClueSrc_item1 = 'Assets/Assets/Item 1 - clue_DOWN.png';
-            const downClue_item1 = document.createElement('img');
-            downClue_item1.src = downClueSrc_item1;
-            downClue_item1.classList.add('img');
-            downClue_item1.style.maxWidth = '100%';
-            downClue_item1.style.maxHeight = '100%';
-            // down clue, first//
+  state.players.forEach((player, i) => {
+    const isActive = i === state.currentPlayerIndex;
+    const card     = document.createElement('div');
+    card.className = `player-card${isActive ? ' active-player' : ''}${!player.alive ? ' dead' : ''}`;
 
-            // up clue first //
-            const downClueSrc_item2 = 'Assets/Assets/Item 1 - clue_UP.png';
-            const downClue_item2 = document.createElement('img');
-            downClue_item2.src = downClueSrc_item2;
-            downClue_item2.classList.add('img');
-            downClue_item2.style.maxWidth = '100%';
-            downClue_item2.style.maxHeight = '100%';
-            // up clue first//
+    const pct = player.maxWater > 0 ? Math.max(0, player.water / player.maxWater * 100) : 0;
+    const low = pct <= 30;
 
-            // (go to right ) clue of first
-            const downClueSrc_item3 = 'Assets/Assets/Item 1 - clue_RIGHT.png';
-            const downClue_item3 = document.createElement('img');
-            downClue_item3.src = downClueSrc_item3;
-            downClue_item3.classList.add('img');
-            downClue_item3.style.maxWidth = '100%';
-            downClue_item3.style.maxHeight = '100%';
-            // (go to right ) clue of first
+    card.innerHTML = `
+      <div class="player-name-header" style="color:${player.color}">
+        ${player.name}${!player.alive ? ' 💀' : isActive ? ' ◀' : ''}
+      </div>
+      <div class="water-bar-wrap">
+        <div class="water-bar${low ? ' low' : ''}" style="width:${pct}%"></div>
+      </div>
+      <div class="player-stat">
+        <img src="Assets/Assets/Water.png" alt="Water">
+        <span>${player.water} / ${player.maxWater}</span>
+      </div>
+      <div class="player-items">
+        ${[0, 1, 2].map(idx => `
+          <div class="player-item-ind${state.itemsCollected[idx] ? ' found' : ''}"
+               title="${ITEM_NAMES[idx]}">
+            <img src="Assets/Assets/Item ${idx + 1}.png" alt="${ITEM_NAMES[idx]}">
+          </div>`).join('')}
+      </div>`;
 
-            //go left clue
-            const downClueSrc_item4 = 'Assets/Assets/Item 1 - clue_LEFT.png';
-            const downClue_item4 = document.createElement('img');
-            downClue_item4.src = downClueSrc_item4;
-            downClue_item4.classList.add('img');
-            downClue_item4.style.maxWidth = '100%';
-            downClue_item4.style.maxHeight = '100%';
-            
-            //go left clue
+    panel.appendChild(card);
+  });
+}
 
-            // --------->>> SECOND ITEM OPERATIONS ------------<<<<< ///
+function renderActionBar() {
+  const actEl  = document.getElementById('actionsLeft');
+  const nameEl = document.getElementById('currentPlayerName');
 
-            // down clue, second //
-            const secondClueDown_src = 'Assets/Assets/Item 2 - clue_DOWN.png';
-            const secondClueDown = document.createElement('img');
-            secondClueDown.src = secondClueDown_src;
-            secondClueDown.classList.add('img');
-            secondClueDown.style.maxWidth = '100%';
-            secondClueDown.style.maxHeight = '100%';
-            // down clue, second//
+  if (actEl) {
+    actEl.textContent = state.actionsLeft;
+    actEl.style.color = state.actionsLeft > 0 ? '#27ae60' : '#c0392b';
+  }
+  if (nameEl) {
+    const cp         = state.players[state.currentPlayerIndex];
+    nameEl.textContent = cp.name;
+    nameEl.style.color = cp.color;
+  }
 
-            
-            // up clue second //
-            const secondClueUp_src = 'Assets/Assets/Item 2 - clue_UP.png';
-            const secondClueUp = document.createElement('img');
-            secondClueUp.src = secondClueUp_src;
-            secondClueUp.classList.add('img');
-            secondClueUp.style.maxWidth = '100%';
-            secondClueUp.style.maxHeight = '100%';
-            // up clue second//
-            
-            // (go to right ) clue of second
-            const secondClueRight_src = 'Assets/Assets/Item 2 - clue_RIGHT.png';
-            const secondClueRight = document.createElement('img');
-            secondClueRight.src = secondClueRight_src;
-            secondClueRight.classList.add('img');
-            secondClueRight.style.maxWidth = '100%';
-            secondClueRight.style.maxHeight = '100%';
-            // (go to right ) clue of second
-            
-            //go left clue
-            const secondClueLeft_src = 'Assets/Assets/Item 2 - clue_LEFT.png';
-            const secondClueLeft = document.createElement('img');
-            secondClueLeft.src = secondClueLeft_src;
-            secondClueLeft.classList.add('img');
-            secondClueLeft.style.maxWidth = '100%';
-            secondClueLeft.style.maxHeight = '100%';
+  const digBtn = document.getElementById('digBtn');
+  const cp     = state.players[state.currentPlayerIndex];
+  const locked = state.gameOver || state.victory || !cp.alive || !!state.turnEnding;
 
+  if (digBtn) digBtn.disabled = locked || state.actionsLeft <= 0;
+}
 
+function renderClueTracker() {
+  [0, 1, 2].forEach(i => {
+    const el  = document.getElementById(`clue${i}count`);
+    const row = document.getElementById(`clueRow${i}`);
+    if (el)  el.textContent = `${Math.min(state.cluesFound[i], 2)}/2`;
+    if (row) row.classList.toggle('complete', state.cluesFound[i] >= 2);
+  });
+}
 
-            // ******************** Third Item Operations ******************
-            const thirdClueDown_src = 'Assets/Assets/Item 3 - clue_DOWN.png';
-            const thirdClueDown = document.createElement('img');
-            thirdClueDown.src = thirdClueDown_src;
-            thirdClueDown.classList.add('img');
-            thirdClueDown.style.maxWidth = '100%';
-            thirdClueDown.style.maxHeight = '100%';
-            
-            const thirdClueUp_src = 'Assets/Assets/Item 3 - clue_UP.png';
-            const thirdClueUp = document.createElement('img');
-            thirdClueUp.src = thirdClueUp_src;
-            thirdClueUp.classList.add('img');
-            thirdClueUp.style.maxWidth = '100%';
-            thirdClueUp.style.maxHeight = '100%';
-            // up clue third//
-            
-            const thirdClueRight_src = 'Assets/Assets/Item 3 - clue_RIGHT.png';
-            const thirdClueRight = document.createElement('img');
-            thirdClueRight.src = thirdClueRight_src;
-            thirdClueRight.classList.add('img');
-            thirdClueRight.style.maxWidth = '100%';
-            thirdClueRight.style.maxHeight = '100%';
-            // (go to right ) clue of third
-            
-            const thirdClueLeft_src = 'Assets/Assets/Item 3 - clue_LEFT.png';
-            const thirdClueLeft = document.createElement('img');
-            thirdClueLeft.src = thirdClueLeft_src;
-            thirdClueLeft.classList.add('img');
-            thirdClueLeft.style.maxWidth = '100%';
-            thirdClueLeft.style.maxHeight = '100%';
-            
+function renderItemSlots() {
+  [0, 1, 2].forEach(i => {
+    const slot = document.getElementById(`itemSlot${i}`);
+    if (slot) slot.classList.toggle('found', state.itemsCollected[i]);
+  });
+}
 
-            // HOLES
-            const holeSrc = 'Assets/Assets/Hole.png';
-            const hole = document.createElement('img');
-            hole.src = holeSrc;
-            hole.classList.add('img');
-            hole.style.maxHeight = '100%';
-            hole.style.maxWidth = '100%';
-            //hole.style.visibility = 'hidden'
-            
+/* ============================================================
+   TIMER
+   ============================================================ */
 
-            
-            // ******************--------- > down clue for the items <-------*****************
-            if (itemSrc === 'Assets/Assets/Item 1.png') {
-                let aboveCellIndex = tileIndex - 20;
-                if (aboveCellIndex >= 0 && availableSpots.includes(aboveCellIndex) && cellDoesNotContainImg(aboveCellIndex)) {
-                    addClues(cells[aboveCellIndex], downClue_item1)               
-                } else {
-                    aboveCellIndex = tileIndex - 15;
-                    if (aboveCellIndex >= 0 && availableSpots.includes(aboveCellIndex) && cellDoesNotContainImg(aboveCellIndex)) {
-                        addClues(cells[aboveCellIndex], downClue_item1)
-                    } else {
-                        aboveCellIndex = tileIndex - 10;
-                        if (aboveCellIndex >= 0 && availableSpots.includes(aboveCellIndex) && cellDoesNotContainImg(aboveCellIndex)) {
-                            addClues(cells[aboveCellIndex], downClue_item1)
-                        } else {
-                            aboveCellIndex = tileIndex - 5;
-                            if (aboveCellIndex >= 0 && availableSpots.includes(aboveCellIndex) && cellDoesNotContainImg(aboveCellIndex)) {
-                                addClues(cells[aboveCellIndex], downClue_item1)
-                            }
-                        }
-                    }
-                }
-            } 
-            if(itemSrc === 'Assets/Assets/Item 2.png') {
-                let aboveCellIndex = tileIndex - 20;
-                if (aboveCellIndex >= 0 && availableSpots.includes(aboveCellIndex) && cellDoesNotContainImg(aboveCellIndex)) {
-                    addClues(cells[aboveCellIndex], secondClueDown)               
-                } else {
-                    aboveCellIndex = tileIndex - 15;
-                    if (aboveCellIndex >= 0 && availableSpots.includes(aboveCellIndex) && cellDoesNotContainImg(aboveCellIndex)) {
-                        addClues(cells[aboveCellIndex], secondClueDown)
-                    } else {
-                        aboveCellIndex = tileIndex - 10;
-                        if (aboveCellIndex >= 0 && availableSpots.includes(aboveCellIndex) && cellDoesNotContainImg(aboveCellIndex)) {
-                            addClues(cells[aboveCellIndex], secondClueDown)
-                        } else {
-                            aboveCellIndex = tileIndex - 5;
-                            if (aboveCellIndex >= 0 && availableSpots.includes(aboveCellIndex) && cellDoesNotContainImg(aboveCellIndex)) {
-                                addClues(cells[aboveCellIndex], secondClueDown)
-                            }
-                        }
-                    }
-                }
-            }  
-            if(itemSrc === 'Assets/Assets/Item 3.png') {
-                aboveCellIndex = tileIndex - 15;
-                    if (aboveCellIndex >= 0 && availableSpots.includes(aboveCellIndex) && cellDoesNotContainImg(aboveCellIndex)) {
-                        addClues(cells[aboveCellIndex], thirdClueDown)
-                    } else {
-                        aboveCellIndex = tileIndex - 10;
-                        if (aboveCellIndex >= 0 && availableSpots.includes(aboveCellIndex) && cellDoesNotContainImg(aboveCellIndex)) {
-                            addClues(cells[aboveCellIndex], thirdClueDown)
-                        } else {
-                            aboveCellIndex = tileIndex - 5;
-                            if (aboveCellIndex >= 0 && availableSpots.includes(aboveCellIndex) && cellDoesNotContainImg(aboveCellIndex)) {
-                                addClues(cells[aboveCellIndex], thirdClueDown)
-                            }
-                        }
-                    }
-            }
-            // ******************--------- > down clue for the items <-------*****************
-            
+function startTimer() {
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(() => {
+    if (!state || state.gameOver || state.victory) return;
+    state.timer++;
+    updateTimerDisplay();
+  }, 1000);
+}
 
+function updateTimerDisplay() {
+  const el = document.getElementById('timerDisplay');
+  if (el && state) {
+    el.textContent =
+      String(Math.floor(state.timer / 60)).padStart(2, '0') + ':' +
+      String(state.timer % 60).padStart(2, '0');
+  }
+}
 
+/* ============================================================
+   SAVE / LOAD  (localStorage)
+   ============================================================ */
 
-            // ****************** up clue for the itesm ***************//
-            if (itemSrc === 'Assets/Assets/Item 1.png') {
-                let downCellIndex = tileIndex + 20;
-                if (downCellIndex >= 0 && availableSpots.includes(downCellIndex) && cellDoesNotContainImg(downCellIndex)) {
-                    addClues(cells[downCellIndex], downClue_item2)               
-                } else {
-                    downCellIndex = tileIndex + 15;
-                    if (downCellIndex >= 0 && availableSpots.includes(downCellIndex) && cellDoesNotContainImg(downCellIndex)) {
-                        addClues(cells[downCellIndex], downClue_item2)
-                    } else {
-                        downCellIndex = tileIndex + 10;
-                        if (downCellIndex >= 0 && availableSpots.includes(downCellIndex) && cellDoesNotContainImg(downCellIndex)) {
-                            addClues(cells[downCellIndex], downClue_item2)
-                        } else {
-                            downCellIndex = tileIndex + 5;
-                            if (downCellIndex >= 0 && availableSpots.includes(downCellIndex) && cellDoesNotContainImg(downCellIndex)) {
-                                addClues(cells[downCellIndex], downClue_item2)
-                            }
-                        }
-                    }
-                }
-            } 
-            if (itemSrc === 'Assets/Assets/Item 2.png') {
-                let downCellIndex = tileIndex + 20;
-                if (downCellIndex >= 0 && availableSpots.includes(downCellIndex) && cellDoesNotContainImg(downCellIndex)) {
-                    addClues(cells[downCellIndex], secondClueUp)               
-                } else {
-                    downCellIndex = tileIndex + 15;
-                    if (downCellIndex >= 0 && availableSpots.includes(downCellIndex) && cellDoesNotContainImg(downCellIndex)) {
-                        addClues(cells[downCellIndex], secondClueUp)
-                    } else {
-                        downCellIndex = tileIndex + 10;
-                        if (downCellIndex >= 0 && availableSpots.includes(downCellIndex) && cellDoesNotContainImg(downCellIndex)) {
-                            addClues(cells[downCellIndex], secondClueUp)
-                        } else {
-                            downCellIndex = tileIndex + 5;
-                            if (downCellIndex >= 0 && availableSpots.includes(downCellIndex) && cellDoesNotContainImg(downCellIndex)) {
-                                addClues(cells[downCellIndex], secondClueUp)
-                            }
-                        }
-                    }
-                }
-            } 
-            if (itemSrc === 'Assets/Assets/Item 3.png') {
-                let downCellIndex = tileIndex + 20;
-                if (downCellIndex >= 0 && availableSpots.includes(downCellIndex) && cellDoesNotContainImg(downCellIndex)) {
-                    addClues(cells[downCellIndex], thirdClueUp)               
-                } else {
-                    downCellIndex = tileIndex + 15;
-                    if (downCellIndex >= 0 && availableSpots.includes(downCellIndex) && cellDoesNotContainImg(downCellIndex)) {
-                        addClues(cells[downCellIndex], thirdClueUp)
-                    } else {
-                        downCellIndex = tileIndex + 10;
-                        if (downCellIndex >= 0 && availableSpots.includes(downCellIndex) && cellDoesNotContainImg(downCellIndex)) {
-                            addClues(cells[downCellIndex], thirdClueUp)
-                        } else {
-                            downCellIndex = tileIndex + 5;
-                            if (downCellIndex >= 0 && availableSpots.includes(downCellIndex) && cellDoesNotContainImg(downCellIndex)) {
-                                addClues(cells[downCellIndex], thirdClueUp)
-                            }
-                        }
-                    }
-                }
-            }
-            // ****************** up clue for the item ***************//
+function saveState() {
+  if (!state) return;
+  try {
+    /* Don't serialise the interval handle */
+    const { timerInterval: _t, ...toSave } = state;
+    localStorage.setItem('stargateGame', JSON.stringify(toSave));
+  } catch (_) {}
+}
 
+function loadSavedGame() {
+  try {
+    const raw = localStorage.getItem('stargateGame');
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    state = { ...parsed, timerInterval: null };
+    if (!state.gameOver && !state.victory) startTimer();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 
+/* ============================================================
+   HOME SCREEN
+   ============================================================ */
 
+function initHomeScreen() {
+  document.querySelectorAll('.count-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedPlayerCount = parseInt(btn.dataset.count);
+      document.querySelectorAll('.count-btn')
+        .forEach(b => b.classList.toggle('active', b === btn));
+      renderPlayerInputs(selectedPlayerCount);
+    });
+  });
 
-            // *************** go Right clue for the item *****************/
-            if (itemSrc === 'Assets/Assets/Item 1.png') {
-                for (let i = tileIndex - 1; i >= 0; i--) {
-                    if (Math.floor(tileIndex / 5) === Math.floor(i / 5) && availableSpots.includes(i) && cellDoesNotContainImg(tileIndex)) {
-                        addClues(cells[i], downClue_item3);
-                    } else {
-                        break; 
-                    }
-                }
-            } 
-            if (itemSrc === 'Assets/Assets/Item 2.png') {
-                for (let i = tileIndex - 1; i >= 0; i--) {
-                    if (Math.floor(tileIndex / 5) === Math.floor(i / 5) && availableSpots.includes(i) && cellDoesNotContainImg(tileIndex)) {
-                        addClues(cells[i], secondClueRight);
-                    } else {
-                        break; 
-                    }
-                }
-            } 
-            if (itemSrc === 'Assets/Assets/Item 3.png') {
-                for (let i = tileIndex - 1; i >= 0; i--) {
-                    if (Math.floor(tileIndex / 5) === Math.floor(i / 5) && availableSpots.includes(i) && cellDoesNotContainImg(tileIndex)) {
-                        addClues(cells[i], thirdClueRight);
-                    } else {
-                        break; 
-                    }
-                }
-            }
-            // *************** go Right clue for the  item *****************/
+  renderPlayerInputs(1);
 
+  document.getElementById('startBtn').addEventListener('click', startGame);
 
+  /* Show "Continue" button if a save exists */
+  if (localStorage.getItem('stargateGame')) {
+    document.getElementById('continueRow').classList.remove('hidden');
+    document.getElementById('continueBtn').addEventListener('click', continueGame);
+  }
+}
 
-            
-            // *************** go Left clue for the items *****************/
-            if (itemSrc === 'Assets/Assets/Item 1.png') {
-                for (let i = tileIndex + 1; i % 5 !== 0; i++) {
-                    if (availableSpots.includes(i) && cellDoesNotContainImg(tileIndex)) {
-                        addClues(cells[i], downClue_item4);
-                        break;
-                    }
-                }
-            } 
-            if (itemSrc === 'Assets/Assets/Item 3.png') {
-                for (let i = tileIndex + 1; i % 5 !== 0; i++) {
-                    if (availableSpots.includes(i) && cellDoesNotContainImg(tileIndex)) {
-                        addClues(cells[i], thirdClueLeft);
-                        break;
-                    }
-                }
-            } 
-            if (itemSrc === 'Assets/Assets/Item 2.png') {
-                for (let i = tileIndex + 1; i % 5 !== 0; i++) {
-                    if (availableSpots.includes(i) && cellDoesNotContainImg(tileIndex)) {
-                        addClues(cells[i], secondClueLeft);
-                        break;
-                    }
-                }
-            }
-            
-            // *************** go Left clue for the  items *****************
-            playerOneAction.addEventListener("click", function() {
-                if(tileIndex === global && (global !== 0)) {
-                    itemImage.style.visibility = 'visible'
-                    cell.style.backgroundColor = 'rgba(253,231,190,255)';
-                    partElements[index].querySelector('img').style.opacity = 1;
-                    actions = actions - 1;
-                    const actionsDisplay = document.querySelector("#palmNum1")
-                    if(actionsDisplay) {
-                        actionsDisplay.textContent = actions;
-                    }
-                }        
-           })
-           
+function renderPlayerInputs(count) {
+  const container     = document.getElementById('playerInputs');
+  container.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const row       = document.createElement('div');
+    row.className   = 'player-input-row';
+    row.innerHTML   = `
+      <div class="player-color-dot" style="background:${PLAYER_COLORS[i]}"></div>
+      <input type="text" class="player-name-input"
+             placeholder="Player ${i + 1}" maxlength="12">`;
+    container.appendChild(row);
+  }
+}
 
-        });   
-        
-    }
+function startGame() {
+  const inputs = document.querySelectorAll('.player-name-input');
+  const names  = Array.from(inputs).map((inp, i) => inp.value.trim() || `Player ${i + 1}`);
+  const water  = Math.max(1, parseInt(document.getElementById('startingWater').value) || 5);
 
-    function fillTheRest(){
-        let availableSpots = [];
-        for (let i = 0; i  < cells.length; i++) {
-            if (!cells[i].querySelector('img')) {
-                availableSpots.push(i);
-            }
-        }
-        
-        for (let i = 0; i <= availableSpots.length; i++) {
-            const freeInd = availableSpots[i];
-            if (freeInd >= 0 && freeInd < cells.length) {
-                const cell = cells[freeInd];
-                if (cellDoesNotContainImg(freeInd)) {
-                    const holeSrc = 'Assets/Assets/Hole.png';
-                    const hole = document.createElement('img');
-                    hole.src = holeSrc;
-                    hole.classList.add('img');
-                    hole.style.maxWidth = '100%';
-                    hole.style.maxHeight = '100%';
-                    cell.appendChild(hole);
-                    hole.style.visibility = 'hidden'
+  initGame(selectedPlayerCount, names, water);
+  showGameScreen();
+  /* Show tutorial — timer starts only after player dismisses it */
+  document.getElementById('tutorialOverlay').classList.remove('hidden');
+}
 
-                    playerOneAction.addEventListener("click", function() {
-                        const cellIndex = Array.from(cells).indexOf(cell);
-                        if (cellIndex === global && (global !== 0)) {
-                            hole.style.visibility = 'visible';
-                            hole.style.backgroundColor = 'rgba(253, 231, 90, 1)';
-                        } 
-                    });
-                }
-            }
-        }
-    }
+function showStory() {
+  document.getElementById('storyOverlay').classList.remove('hidden');
+}
 
-    
-    
-document.addEventListener("DOMContentLoaded", function(){
-    RandomOasesHandler();
-    loadPlayer();
-    panelsPopulate();
-    fillTheRest()
+function hideStory() {
+  document.getElementById('storyOverlay').classList.add('hidden');
+}
+
+function dismissTutorial() {
+  document.getElementById('tutorialOverlay').classList.add('hidden');
+  startTimer();
+  addLog('The expedition begins! Find all 3 Stargate components.');
+  addLog('Click a glowing tile to move. Press "Dig" to reveal your current tile.');
+}
+
+function continueGame() {
+  if (loadSavedGame()) {
+    showGameScreen();
+    updateTimerDisplay();
+    addLog('Game restored — welcome back!');
+  }
+}
+
+function showGameScreen() {
+  document.getElementById('homeScreen').classList.remove('active');
+  document.getElementById('gameScreen').classList.add('active');
+  render();
+}
+
+function resetGame() {
+  if (state && state.timerInterval) clearInterval(state.timerInterval);
+  state = null;
+  logBuffer.length = 0;
+  localStorage.removeItem('stargateGame');
+
+  document.getElementById('gameOverOverlay').classList.add('hidden');
+  document.getElementById('victoryOverlay').classList.add('hidden');
+  document.getElementById('gameScreen').classList.remove('active');
+  document.getElementById('homeScreen').classList.add('active');
+
+  /* Hide continue button since save was deleted */
+  document.getElementById('continueRow').classList.add('hidden');
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+
+document.addEventListener('DOMContentLoaded', () => {
+  initHomeScreen();
+  document.getElementById('digBtn').addEventListener('click', handleDig);
+  document.getElementById('tutorialDismiss').addEventListener('click', dismissTutorial);
 });
-
-
-
-
